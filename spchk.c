@@ -170,6 +170,8 @@ void getwords(char *txtfile, word words[]) {
         while (line[col-1] != '\n' && col-1 < strlen(line)) {
             if ((col-1 < strlen(line)) && ((line[col-1] >= 65 && line[col-1] <= 90) || (line[col-1] >= 97 && line[col-1] <= 122))) {
                 char *currword = malloc(MAX_LEN);
+                memset(currword, 0, MAX_LEN);
+                
                 int currlen = 0;
 
                 currword[currlen] = line[col-1];
@@ -187,9 +189,10 @@ void getwords(char *txtfile, word words[]) {
                 }
                 if (DEBUG) printf("%s\n", currword);
                 strcpy(words[wordcount].word, currword);
+                free(currword);
+
                 wordcount++;
             }
-
             col++;
         }
         linenum++;
@@ -198,6 +201,17 @@ void getwords(char *txtfile, word words[]) {
     }
 
     close(currfd);
+}
+
+
+
+// clears all data from words so there's no overwriting issues
+void clearwords (word words[], int wordslength) {
+    for (int i = 0; i < 500; i++) {
+        words[i].line = 0;
+        words[i].number = 0;
+        strcpy(words[i].word, "");
+    }
 }
 
 
@@ -238,15 +252,18 @@ int main(int argc, char **argv) {
         word words[500];
         getwords(txt_files[i], words);
         
-        for (int j = 0; j < 10; j++) {
-            printf("File: %s\n", txt_files[i]);
-            printf("Line Number: %d\n", words[j].line);
-            printf("Column: %d\n", words[j].number);
-            printf("Word: %s\n", words[j].word);
+        if (1) {
+            int j = 0;
+            while (words[j].line != 0) {
+                printf("File: %s\n", txt_files[i]);
+                printf("Line Number: %d\n", words[j].line);
+                printf("Column: %d\n", words[j].number);
+                printf("Word: %s\n", words[j].word);
+                j++;
+            }
         }
 
-
-        if (DEBUG) printf("%s\n", txt_files[i]);
+        clearwords(words, 500);
     }
 
     return EXIT_SUCCESS;
