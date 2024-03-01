@@ -5,6 +5,7 @@
 #include <string.h>
 #include <strings.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <sys/stat.h>
 
 #define MAX_LINES 200000
@@ -214,7 +215,173 @@ void clearwords (word words[], int wordslength) {
     }
 }
 
+//reports error message if not found in dictionary
+void report_error(char *file, int line, int column_number, const char *word) {
+    fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
+}
 
+
+//search the dictionary array using binary search (O(2 * log(n)))
+int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
+            
+            //set lower and upper bounds
+            int min = 0;
+            int mid = 0;
+            int max = dictionaryCount - 1;
+
+            while (min <= max) {
+                mid = (min + max) / 2;
+                //if the dictionary word comes after the word in the text file
+                if (strcmp(dictionary[mid],list.word) > 0) {
+                    //if the words are equal not based on capitalization
+                    if (strcasecmp(dictionary[mid],list.word) == 0) {
+                        //if the dictionary word starts with a lowercase letter
+                        if (islower(dictionary[mid][0]) != 0) {
+                            int d = 1;
+                            int check = 0;
+                            int len = strlen(list.word);
+                            //if the text file word starts with a capital letter
+                            if (isupper(list.word[0]) != 0) {
+                                //checks the number of capital letters in the word
+                                while (list.word[d] != '\0') {
+                                    if (isupper(list.word[d]) != 0) {
+                                        check++;
+                                    }
+                                    d++;
+                                }
+                                
+                                //accepts the word if the only capital letter is the starting letter
+                                //  or if all the letters in the word are capital
+                                if (check == 0 || check == len - 1) {
+                                    return mid;
+                                }
+                            }
+                         // if the dictionary word starts with an uppercase letter
+                        } else {
+                            int i = 0;
+                            int state = 0;
+                            while (list.word[i] != '\0') {
+                                //checks if all letters are capital
+                                if (!isupper(list.word[i])) {
+                                    state = 1;
+                                }
+                                i++;
+                            }  
+                       
+                            //only accepts the word if all letters are capital
+                            if (state == 0) {
+                                return mid;
+                        }
+                        }
+                    } 
+                        max = mid - 1;
+                        
+                } else if (strcmp(dictionary[mid],list.word) < 0) {
+                        min = mid + 1;
+                } else {
+                    //accepts if it's a direct match
+                    return mid;
+                }
+            }
+
+            //resets the binary search and checks again with all lowercase letters in the word
+            //this is essential in cases where the dictionary word starts with a lowercase letter
+            //Ex: "Hello" is accepted with the dictionary word "hello", but moves to the left in the first instance of B.S.
+            min = 0;
+            mid = 0;
+            max = dictionaryCount - 1;
+
+            char lowercase[strlen(list.word) + 1]; // Allocate space for the null terminator
+            for (int i = 0; i < strlen(list.word); i++) {
+                lowercase[i] = tolower(list.word[i]);
+            }
+            
+            lowercase[strlen(list.word)] = '\0';
+
+             while (min <= max) {
+                mid = (min + max) / 2;
+                //if the dictionary word comes after the word in the text file
+                if (strcmp(dictionary[mid],lowercase) > 0) {
+                    //if the words are equal not based on capitalization
+                    if (strcasecmp(dictionary[mid],list.word) == 0) {
+                        //if the dictionary word starts with a lowercase letter
+                        if (islower(dictionary[mid][0]) != 0) {
+                            int d = 1;
+                            int check = 0;
+                            int len = strlen(list.word);
+                            //if the text file word starts with a capital letter
+                            if (isupper(list.word[0]) != 0) {
+                                //checks the number of capital letters in the word
+                                while (list.word[d] != '\0') {
+                                    if (isupper(list.word[d]) != 0) {
+                                        check++;
+                                    }
+                                    d++;
+                                }
+                                
+                                //accepts the word if the only capital letter is the starting letter
+                                //  or if all the letters in the word are capital
+                                if (check == 0 || check == len - 1) {
+                                    return mid;
+                                }
+                            }
+                         // if the dictionary word starts with an uppercase letter
+                        } else {
+                            int i = 0;
+                            int state = 0;
+                            while (list.word[i] != '\0') {
+                                //checks if all letters are capital
+                                if (!isupper(list.word[i])) {
+                                    state = 1;
+                                }
+                                i++;
+                            }  
+                       
+                            //only accepts the word if all letters are capital
+                            if (state == 0) {
+                                return mid;
+                        }
+                        }
+                    } 
+                        max = mid - 1;
+                        
+                } else if (strcmp(dictionary[mid],lowercase) < 0) {
+                        min = mid + 1;
+                } else {
+                    //accepts if it's a direct match
+                    return mid;
+                }
+            }
+
+
+            //returns -1 if no matches found
+            return -1;    
+        }
+
+
+//splits words with hyphens into smaller chunk and writes it to an array
+void splitHyphens(char* input, char** words) {
+
+    char* token = strtok(input, "-");
+    int count = 0;  
+    while (token != NULL) {
+        words[count] = token; 
+        token = strtok(NULL, "-");
+        count++;
+    }
+    return;
+}
+
+
+void iterateFile(char **dictionary, word* list, int dictionaryCount, int lengthOfFile, char* file) {
+
+    for (int i = 0; i < lengthOfFile; i++) {
+        int state = binarySearchDict(dictionary, list[i], dictionaryCount);
+        if (state == -1) {
+            report_error(file, list[i].line, list[i].number, list[i].word);
+        }
+    }
+}
 
 int main(int argc, char **argv) {  
     if (argc < 2) {
