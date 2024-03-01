@@ -95,7 +95,8 @@ char *next_line(lines_t *L) {
 
 
 // Populates the dictionary array
-void populate_dict(lines_t *L) {
+// Can return n for iteration
+int populate_dict(lines_t *L) {
     char *line;
     int n = 0;
 
@@ -104,6 +105,8 @@ void populate_dict(lines_t *L) {
         n++;
         free(line);
     }
+
+    return n;
 }
 
 
@@ -155,7 +158,8 @@ void populate_txts(char *handle) {
 
 
 // Populates the struct array with words from each file
-void getwords(char *txtfile, word words[]) {
+// Can return wordcount to use in iteration
+int getwords(char *txtfile, word words[]) {
     char *line;
 
     int wordcount = 0;
@@ -202,6 +206,7 @@ void getwords(char *txtfile, word words[]) {
     }
 
     close(currfd);
+    return wordcount;
 }
 
 
@@ -359,7 +364,7 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
         }
 
 
-//splits words with hyphens into smaller chunk and writes it to an array
+//splits words with hyphens into smaller chunks and writes it to an array
 void splitHyphens(char* input, char** words) {
 
     char* token = strtok(input, "-");
@@ -397,7 +402,8 @@ int main(int argc, char **argv) {
 
     lines_t dictL;
     fdinit(&dictL, dict_fd);
-    populate_dict(&dictL);
+    //returns number of words in the dictionary
+    int dictionaryCount = populate_dict(&dictL);
 
     
     for (int i = 2; i < argc; i++){
@@ -417,7 +423,8 @@ int main(int argc, char **argv) {
      
     for (int i = 0; i < txtcount; i++) {
         word words[500];
-        getwords(txt_files[i], words);
+        //returns number of words in the struct array while populating it
+        int wordCount = getwords(txt_files[i], words);
         
         if (1) {
             int j = 0;
@@ -430,6 +437,7 @@ int main(int argc, char **argv) {
             }
         }
 
+      //  iterateFile(dict, words, dictionaryCount, wordCount, "test.txt");
         clearwords(words, 500);
     }
 
