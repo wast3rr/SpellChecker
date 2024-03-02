@@ -5,6 +5,8 @@
 #include <string.h>
 #include <strings.h>
 #include <dirent.h>
+#include <ctype.h>
+#include <errno.h>
 #include <sys/stat.h>
 
 #define MAX_LINES 200000
@@ -94,7 +96,8 @@ char *next_line(lines_t *L) {
 
 
 // Populates the dictionary array
-void populate_dict(lines_t *L) {
+// Can return n for iteration
+int populate_dict(lines_t *L) {
     char *line;
     int n = 0;
 
@@ -103,14 +106,14 @@ void populate_dict(lines_t *L) {
         n++;
         free(line);
     }
+
+    return n;
 }
 
 
 
 // gets the names of all txt files
 void populate_txts(char *handle) {
-    char path[100];
-    strcpy(path, handle);
     DIR *d = opendir(handle);
 
     struct dirent *dir;
@@ -122,12 +125,11 @@ void populate_txts(char *handle) {
                 
             struct stat sbuf;
             char temppath[100];
-            strcpy(temppath, path);
+            strcpy(temppath, handle);
             strcat(temppath, "/");
             strcat(temppath, currname);
 
             int x = stat(temppath, &sbuf);
-
             if (x < 0) {
                 closedir(d);
                 return;
@@ -135,14 +137,12 @@ void populate_txts(char *handle) {
 
             if (strlen(currname) >= 4) {
                 if (!strcmp(lastfour, ".txt") && S_ISREG(sbuf.st_mode)) {
-                    strcat(txt_files[txtcount], temppath);
+                    strcpy(txt_files[txtcount], temppath);
                     txtcount++;
                 }
             }
             if (((S_ISDIR(sbuf.st_mode) && (currname[0] != '.') && (strcmp(lastfour, ".txt") != 0)))) {
-                strcat(path, "/");
-                strcat(path, currname);
-                populate_txts(path);
+                populate_txts(temppath);
             }
         }
     } else {
@@ -154,7 +154,8 @@ void populate_txts(char *handle) {
 
 
 // Populates the struct array with words from each file
-void getwords(char *txtfile, word words[]) {
+// Can return wordcount to use in iteration
+int getwords(char *txtfile, word words[]) {
     char *line;
 
     int wordcount = 0;
@@ -201,6 +202,7 @@ void getwords(char *txtfile, word words[]) {
     }
 
     close(currfd);
+    return wordcount;
 }
 
 
@@ -214,7 +216,183 @@ void clearwords (word words[], int wordslength) {
     }
 }
 
+//reports error message if not found in dictionary
+void report_error(char *file, int line, int column_number, const char *word) {
+    fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
+}
 
+
+//search the dictionary array using binary search (O(2 * log(n)))
+int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
+            //printf("Current word: \"%s\"\n", list.word);
+            //set lower and upper bounds
+            int min = 0;
+            int mid = 0;
+            int max = dictionaryCount - 1;
+
+            while (min <= max) {
+                mid = (min + max) / 2;
+                //if the dictionary word comes after the word in the text file
+                if (strcmp(dictionary[mid],list.word) > 0) {
+                    //if the words are equal not based on capitalization
+                    if (strcasecmp(dictionary[mid],list.word) == 0) {
+                        //if the dictionary word starts with a lowercase letter
+                        if (islower(dictionary[mid][0]) != 0) {
+                            int d = 1;
+                            int check = 0;
+                            int len = strlen(list.word);
+                            //if the text file word starts with a capital letter
+                            if (isupper(list.word[0]) != 0) {
+                                //checks the number of capital letters in the word
+                                while (list.word[d] != '\0') {
+                                    if (isupper(list.word[d]) != 0) {
+                                        check++;
+                                    }
+                                    d++;
+                                }
+                                
+                                //accepts the word if the only capital letter is the starting letter
+                                //  or if all the letters in the word are capital
+                                if (check == 0 || check == len - 1) {
+                                    return mid;
+                                }
+                            } else {
+                                return -1;
+                            }
+                         // if the dictionary word starts with an uppercase letter
+                        } else {
+                            int i = 0;
+                            int state = 0;
+                            while (list.word[i] != '\0') {
+                                //checks if all letters are capital
+                                if (!isupper(list.word[i])) {
+                                    state = 1;
+                                }
+                                i++;
+                            }  
+                       
+                            //only accepts the word if all letters are capital
+                            if (state == 0) {
+                                
+                                return mid;
+                        }
+                        }
+                    } 
+                        max = mid - 1;
+                        
+                } else if (strcmp(dictionary[mid],list.word) < 0) {
+                        min = mid + 1;
+                } else {
+                    //accepts if it's a direct match
+                   
+                    return mid;
+                }
+            }
+
+            //resets the binary search and checks again with all lowercase letters in the word
+            //this is essential in cases where the dictionary word starts with a lowercase letter
+            //Ex: "Hello" is accepted with the dictionary word "hello", but moves to the left in the first instance of B.S.
+            min = 0;
+            mid = 0;
+            max = dictionaryCount - 1;
+
+            char lowercase[strlen(list.word) + 1]; // Allocate space for the null terminator
+            for (int i = 0; i < strlen(list.word); i++) {
+                lowercase[i] = tolower(list.word[i]);
+            }
+            
+            lowercase[strlen(list.word)] = '\0';
+
+             while (min <= max) {
+                mid = (min + max) / 2;
+                //if the dictionary word comes after the word in the text file
+                if (strcmp(dictionary[mid],lowercase) > 0) {
+                    //if the words are equal not based on capitalization
+                    if (strcasecmp(dictionary[mid],list.word) == 0) {
+                        //if the dictionary word starts with a lowercase letter
+                        if (islower(dictionary[mid][0]) != 0) {
+                            int d = 1;
+                            int check = 0;
+                            int len = strlen(list.word);
+                            //if the text file word starts with a capital letter
+                            if (isupper(list.word[0]) != 0) {
+                                //checks the number of capital letters in the word
+                                while (list.word[d] != '\0') {
+                                    if (isupper(list.word[d]) != 0) {
+                                        check++;
+                                    }
+                                    d++;
+                                }
+                                
+                                //accepts the word if the only capital letter is the starting letter
+                                //  or if all the letters in the word are capital
+                                if (check == 0 || check == len - 1) {
+                                    
+                                    return mid;
+                                }
+                            } else {
+                                return -1;
+                            }
+                         // if the dictionary word starts with an uppercase letter
+                        } else {
+                            int i = 0;
+                            int state = 0;
+                            while (list.word[i] != '\0') {
+                                //checks if all letters are capital
+                                if (!isupper(list.word[i])) {
+                                    state = 1;
+                                }
+                                i++;
+                            }  
+                       
+                            //only accepts the word if all letters are capital
+                            if (state == 0) {
+                                
+                                return mid;
+                        }
+                        }
+                    } 
+                        max = mid - 1;
+                        
+                } else if (strcmp(dictionary[mid],lowercase) < 0) {
+                        min = mid + 1;
+                } else {
+                    //accepts if it's a direct match
+                    
+                    return mid;
+                }
+            }
+
+
+            //returns -1 if no matches found
+            return -1;    
+        }
+
+
+//splits words with hyphens into smaller chunks and writes it to an array
+void splitHyphens(char* input, char** words) {
+
+    char* token = strtok(input, "-");
+    int count = 0;  
+    while (token != NULL) {
+        words[count] = token; 
+        token = strtok(NULL, "-");
+        count++;
+    }
+    return;
+}
+
+
+void iterateFile(char dictionary[MAX_LINES][MAX_LEN], word* list, int dictionaryCount, int lengthOfFile, char* file) {
+
+    for (int i = 0; i < lengthOfFile; i++) {
+            int state = binarySearchDict(dictionary, list[i], dictionaryCount);
+        if (state == -1 && list[i].line != 0) {
+            report_error(file, list[i].line, list[i].number, list[i].word);
+        }
+   
+    }
+}
 
 int main(int argc, char **argv) {  
     if (argc < 2) {
@@ -230,7 +408,8 @@ int main(int argc, char **argv) {
 
     lines_t dictL;
     fdinit(&dictL, dict_fd);
-    populate_dict(&dictL);
+    //returns number of words in the dictionary
+    int dictionaryCount = populate_dict(&dictL);
 
     
     for (int i = 2; i < argc; i++){
@@ -250,19 +429,21 @@ int main(int argc, char **argv) {
      
     for (int i = 0; i < txtcount; i++) {
         word words[500];
-        getwords(txt_files[i], words);
+        //returns number of words in the struct array while populating it
+        int wordCount = getwords(txt_files[i], words);
         
-        if (1) {
+        if (DEBUG) {
             int j = 0;
             while (words[j].line != 0) {
                 printf("File: %s\n", txt_files[i]);
                 printf("Line Number: %d\n", words[j].line);
                 printf("Column: %d\n", words[j].number);
-                printf("Word: %s\n", words[j].word);
+                printf("Word: \"%s\"\n", words[j].word);
                 j++;
             }
         }
 
+        iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, txt_files[i]);
         clearwords(words, 500);
     }
 
