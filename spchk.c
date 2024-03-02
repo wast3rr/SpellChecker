@@ -6,6 +6,7 @@
 #include <strings.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sys/stat.h>
 
 #define MAX_LINES 200000
@@ -113,8 +114,6 @@ int populate_dict(lines_t *L) {
 
 // gets the names of all txt files
 void populate_txts(char *handle) {
-    char path[100];
-    strcpy(path, handle);
     DIR *d = opendir(handle);
 
     struct dirent *dir;
@@ -126,12 +125,11 @@ void populate_txts(char *handle) {
                 
             struct stat sbuf;
             char temppath[100];
-            strcpy(temppath, path);
+            strcpy(temppath, handle);
             strcat(temppath, "/");
             strcat(temppath, currname);
 
             int x = stat(temppath, &sbuf);
-
             if (x < 0) {
                 closedir(d);
                 return;
@@ -139,14 +137,12 @@ void populate_txts(char *handle) {
 
             if (strlen(currname) >= 4) {
                 if (!strcmp(lastfour, ".txt") && S_ISREG(sbuf.st_mode)) {
-                    strcat(txt_files[txtcount], temppath);
+                    strcpy(txt_files[txtcount], temppath);
                     txtcount++;
                 }
             }
             if (((S_ISDIR(sbuf.st_mode) && (currname[0] != '.') && (strcmp(lastfour, ".txt") != 0)))) {
-                strcat(path, "/");
-                strcat(path, currname);
-                populate_txts(path);
+                populate_txts(temppath);
             }
         }
     } else {
@@ -228,7 +224,7 @@ void report_error(char *file, int line, int column_number, const char *word) {
 
 //search the dictionary array using binary search (O(2 * log(n)))
 int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
-            
+            //printf("Current word: \"%s\"\n", list.word);
             //set lower and upper bounds
             int min = 0;
             int mid = 0;
@@ -391,7 +387,7 @@ void iterateFile(char dictionary[MAX_LINES][MAX_LEN], word* list, int dictionary
 
     for (int i = 0; i < lengthOfFile; i++) {
             int state = binarySearchDict(dictionary, list[i], dictionaryCount);
-        if (state == -1) {
+        if (state == -1 && list[i].line != 0) {
             report_error(file, list[i].line, list[i].number, list[i].word);
         }
    
@@ -436,18 +432,18 @@ int main(int argc, char **argv) {
         //returns number of words in the struct array while populating it
         int wordCount = getwords(txt_files[i], words);
         
-        if (1) {
+        if (DEBUG) {
             int j = 0;
             while (words[j].line != 0) {
                 printf("File: %s\n", txt_files[i]);
                 printf("Line Number: %d\n", words[j].line);
                 printf("Column: %d\n", words[j].number);
-                printf("Word: %s\n", words[j].word);
+                printf("Word: \"%s\"\n", words[j].word);
                 j++;
             }
         }
 
-        iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, "test.txt");
+        iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, txt_files[i]);
         clearwords(words, 500);
     }
 
