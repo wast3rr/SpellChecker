@@ -227,7 +227,7 @@ void report_error(char *file, int line, int column_number, const char *word) {
 
 
 //search the dictionary array using binary search (O(2 * log(n)))
-int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
+int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
             
             //set lower and upper bounds
             int min = 0;
@@ -260,6 +260,8 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                                 if (check == 0 || check == len - 1) {
                                     return mid;
                                 }
+                            } else {
+                                return -1;
                             }
                          // if the dictionary word starts with an uppercase letter
                         } else {
@@ -275,6 +277,7 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                        
                             //only accepts the word if all letters are capital
                             if (state == 0) {
+                                
                                 return mid;
                         }
                         }
@@ -285,6 +288,7 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                         min = mid + 1;
                 } else {
                     //accepts if it's a direct match
+                   
                     return mid;
                 }
             }
@@ -327,8 +331,11 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                                 //accepts the word if the only capital letter is the starting letter
                                 //  or if all the letters in the word are capital
                                 if (check == 0 || check == len - 1) {
+                                    
                                     return mid;
                                 }
+                            } else {
+                                return -1;
                             }
                          // if the dictionary word starts with an uppercase letter
                         } else {
@@ -344,6 +351,7 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                        
                             //only accepts the word if all letters are capital
                             if (state == 0) {
+                                
                                 return mid;
                         }
                         }
@@ -354,6 +362,7 @@ int binarySearchDict(char** dictionary, word list, int dictionaryCount) {
                         min = mid + 1;
                 } else {
                     //accepts if it's a direct match
+                    
                     return mid;
                 }
             }
@@ -378,13 +387,14 @@ void splitHyphens(char* input, char** words) {
 }
 
 
-void iterateFile(char **dictionary, word* list, int dictionaryCount, int lengthOfFile, char* file) {
+void iterateFile(char dictionary[MAX_LINES][MAX_LEN], word* list, int dictionaryCount, int lengthOfFile, char* file) {
 
     for (int i = 0; i < lengthOfFile; i++) {
-        int state = binarySearchDict(dictionary, list[i], dictionaryCount);
+            int state = binarySearchDict(dictionary, list[i], dictionaryCount);
         if (state == -1) {
             report_error(file, list[i].line, list[i].number, list[i].word);
         }
+   
     }
 }
 
@@ -437,7 +447,7 @@ int main(int argc, char **argv) {
             }
         }
 
-      //  iterateFile(dict, words, dictionaryCount, wordCount, "test.txt");
+        iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, "test.txt");
         clearwords(words, 500);
     }
 
