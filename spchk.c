@@ -51,6 +51,13 @@ typedef struct {
 } word;
 
 
+int isletter (char c) {
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+        return 1;
+    }
+    return 0;         
+}
+
 
 // Returns the next_line of a file using it's struct pointer
 char *next_line(lines_t *L) {
@@ -169,7 +176,7 @@ int getwords(char *txtfile, word words[]) {
    
     while ((line = next_line(&currtxt))) {
         while (line[col-1] != '\n' && col-1 < strlen(line)) {
-            if ((col-1 < strlen(line)) && ((line[col-1] >= 65 && line[col-1] <= 90) || (line[col-1] >= 97 && line[col-1] <= 122))) {
+            if ((col-1 < strlen(line)) && (isletter(line[col-1]))) {
                 char *currword = malloc(MAX_LEN);
                 memset(currword, 0, MAX_LEN);
                 
@@ -182,7 +189,7 @@ int getwords(char *txtfile, word words[]) {
                 
                 col++;
                 currlen++;
-                while ((col-1 < strlen(line)) && ((line[col-1] >= 65 && line[col-1] <= 90) || (line[col-1] >= 97 && line[col-1] <= 122) || (line[col-1] == '-') || (line[col-1] == 39))) {
+                while ((col-1 < strlen(line)) && (isletter(line[col-1]) || ((col < strlen(line) && isletter(line[col]) && (line[col-1] == '-' || line[col-1] == 39))))) {
                     currword[currlen] = line[col-1];
                     
                     col++;
