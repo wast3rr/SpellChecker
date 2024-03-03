@@ -51,6 +51,13 @@ typedef struct {
 } word;
 
 
+int isletter (char c) {
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+        return 1;
+    }
+    return 0;         
+}
+
 
 // Returns the next_line of a file using it's struct pointer
 char *next_line(lines_t *L) {
@@ -169,7 +176,7 @@ int getwords(char *txtfile, word words[]) {
    
     while ((line = next_line(&currtxt))) {
         while (line[col-1] != '\n' && col-1 < strlen(line)) {
-            if ((col-1 < strlen(line)) && ((line[col-1] >= 65 && line[col-1] <= 90) || (line[col-1] >= 97 && line[col-1] <= 122))) {
+            if ((col-1 < strlen(line)) && (isletter(line[col-1]))) {
                 char *currword = malloc(MAX_LEN);
                 memset(currword, 0, MAX_LEN);
                 
@@ -182,7 +189,7 @@ int getwords(char *txtfile, word words[]) {
                 
                 col++;
                 currlen++;
-                while ((col-1 < strlen(line)) && ((line[col-1] >= 65 && line[col-1] <= 90) || (line[col-1] >= 97 && line[col-1] <= 122) || (line[col-1] == '-') || (line[col-1] == 39))) {
+                while ((col-1 < strlen(line)) && (isletter(line[col-1]) || ((col < strlen(line) && isletter(line[col]) && (line[col-1] == '-' || line[col-1] == 39))))) {
                     currword[currlen] = line[col-1];
                     
                     col++;
@@ -221,153 +228,80 @@ void report_error(char *file, int line, int column_number, const char *word) {
     fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
 }
 
-
-//search the dictionary array using binary search (O(2 * log(n)))
 int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
-            //printf("Current word: \"%s\"\n", list.word);
-            //set lower and upper bounds
-            int min = 0;
-            int mid = 0;
-            int max = dictionaryCount - 1;
+    int min = 0;
+    int max = dictionaryCount - 1;
 
-            while (min <= max) {
-                mid = (min + max) / 2;
-                //if the dictionary word comes after the word in the text file
-                if (strcmp(dictionary[mid],list.word) > 0) {
-                    //if the words are equal not based on capitalization
-                    if (strcasecmp(dictionary[mid],list.word) == 0) {
-                        //if the dictionary word starts with a lowercase letter
-                        if (islower(dictionary[mid][0]) != 0) {
-                            int d = 1;
-                            int check = 0;
-                            int len = strlen(list.word);
-                            //if the text file word starts with a capital letter
-                            if (isupper(list.word[0]) != 0) {
-                                //checks the number of capital letters in the word
-                                while (list.word[d] != '\0') {
-                                    if (isupper(list.word[d]) != 0) {
-                                        check++;
-                                    }
-                                    d++;
-                                }
-                                
-                                //accepts the word if the only capital letter is the starting letter
-                                //  or if all the letters in the word are capital
-                                if (check == 0 || check == len - 1) {
-                                    return mid;
-                                }
-                            } else {
-                                return -1;
-                            }
-                         // if the dictionary word starts with an uppercase letter
-                        } else {
-                            int i = 0;
-                            int state = 0;
-                            while (list.word[i] != '\0') {
-                                //checks if all letters are capital
-                                if (!isupper(list.word[i])) {
-                                    state = 1;
-                                }
-                                i++;
-                            }  
-                       
-                            //only accepts the word if all letters are capital
-                            if (state == 0) {
-                                
-                                return mid;
-                        }
-                        }
-                    } 
-                        max = mid - 1;
-                        
-                } else if (strcmp(dictionary[mid],list.word) < 0) {
-                        min = mid + 1;
-                } else {
-                    //accepts if it's a direct match
-                   
-                    return mid;
-                }
-            }
+    while (min <= max) {
+        int mid = (min + max) / 2;
+        int cmp;
 
-            //resets the binary search and checks again with all lowercase letters in the word
-            //this is essential in cases where the dictionary word starts with a lowercase letter
-            //Ex: "Hello" is accepted with the dictionary word "hello", but moves to the left in the first instance of B.S.
-            min = 0;
-            mid = 0;
-            max = dictionaryCount - 1;
-
-            char lowercase[strlen(list.word) + 1]; // Allocate space for the null terminator
-            for (int i = 0; i < strlen(list.word); i++) {
-                lowercase[i] = tolower(list.word[i]);
-            }
-            
-            lowercase[strlen(list.word)] = '\0';
-
-             while (min <= max) {
-                mid = (min + max) / 2;
-                //if the dictionary word comes after the word in the text file
-                if (strcmp(dictionary[mid],lowercase) > 0) {
-                    //if the words are equal not based on capitalization
-                    if (strcasecmp(dictionary[mid],list.word) == 0) {
-                        //if the dictionary word starts with a lowercase letter
-                        if (islower(dictionary[mid][0]) != 0) {
-                            int d = 1;
-                            int check = 0;
-                            int len = strlen(list.word);
-                            //if the text file word starts with a capital letter
-                            if (isupper(list.word[0]) != 0) {
-                                //checks the number of capital letters in the word
-                                while (list.word[d] != '\0') {
-                                    if (isupper(list.word[d]) != 0) {
-                                        check++;
-                                    }
-                                    d++;
-                                }
-                                
-                                //accepts the word if the only capital letter is the starting letter
-                                //  or if all the letters in the word are capital
-                                if (check == 0 || check == len - 1) {
-                                    
-                                    return mid;
-                                }
-                            } else {
-                                return -1;
-                            }
-                         // if the dictionary word starts with an uppercase letter
-                        } else {
-                            int i = 0;
-                            int state = 0;
-                            while (list.word[i] != '\0') {
-                                //checks if all letters are capital
-                                if (!isupper(list.word[i])) {
-                                    state = 1;
-                                }
-                                i++;
-                            }  
-                       
-                            //only accepts the word if all letters are capital
-                            if (state == 0) {
-                                
-                                return mid;
-                        }
-                        }
-                    } 
-                        max = mid - 1;
-                        
-                } else if (strcmp(dictionary[mid],lowercase) < 0) {
-                        min = mid + 1;
-                } else {
-                    //accepts if it's a direct match
-                    
-                    return mid;
-                }
-            }
-
-
-            //returns -1 if no matches found
-            return -1;    
+        // Check if dictionary word is capitalized and list word is lowercase
+        if (isupper(dictionary[mid][0]) && islower(list.word[0])) {
+            cmp = -1; // Set cmp to a value that ensures the word is considered "after" in the comparison
+        } else {
+            cmp = strcasecmp(dictionary[mid], list.word);
         }
 
+        // Debug output
+      //  printf("Current word: \"%s\"\n", dictionary[mid]);
+
+        if (cmp == 0) {
+            // Dictionary word matches list word (ignoring case)
+            if (isupper(dictionary[mid][0])) {
+                int i = 0;
+                int check = 0;
+                int max = strlen(list.word);
+                while (list.word[i] != '\0') {
+                    if (!islower(list.word[i])) {
+                        check++;
+                    }
+                    i++;
+                }
+
+                if (check == 1 || check == max) {
+                    return mid;
+                }
+
+            } else if (islower(dictionary[mid][0]) && isupper(list.word[0])) {
+                int check = 0;
+                int i = 0;
+                int max = strlen(list.word);
+                
+                while (list.word[i] != '\0') {
+                    if (isupper(list.word[i])) {
+                        check++;
+                    }
+                    i++;
+                }
+
+                if (check == 1 || check == max) {
+                    return mid;
+                }
+                return -1;
+            } else if (islower(dictionary[mid][0]) && islower(list.word[0])) {
+                int i = 0;
+                while (list.word[i] != '\0') {
+                    if (!islower(list.word[i])) {
+                        return -1;
+                    }
+                    i++;
+                }
+            }
+
+            return mid;
+        } else if (cmp > 0) {
+            // Adjust lower bound if dictionary word comes after list.word
+            max = mid - 1;
+        } else {
+            // Adjust upper bound if dictionary word comes before list.word
+            min = mid + 1;
+        }
+    }
+
+    // Return -1 if no matches found
+    return -1;    
+}
 
 //splits words with hyphens into smaller chunks and writes it to an array
 void splitHyphens(char* input, char** words) {
