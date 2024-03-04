@@ -308,11 +308,13 @@ int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int diction
         // Check if dictionary word is capitalized and list word is lowercase
         if (isupper(dictionary[mid][0]) && islower(list.word[0])) {
             cmp = -1; // Set cmp to a value that ensures the word is considered "after" in the comparison
-        } else {
+        } else  {
             cmp = strcasecmp(dictionary[mid], list.word);
-
             if (strncasecmp(list.word, dictionary[mid], strlen(dictionary[mid])) == 0) {
-                cmp = 0;
+                if (strlen(list.word) == strlen(dictionary[mid]) + 2) {
+                    cmp = 0;
+                }
+                
             }
             
             if (cmp == -39) {
