@@ -228,109 +228,241 @@ void report_error(char *file, int line, int column_number, const char *word) {
     fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
 }
 
+int* checkApostrophes(char *s1, char *s2, int state[2]) {
+    int check1 = 0;
+    int check2 = 0;
+    
+    
+    for (int i = 0; s1[i] != '\0'; i++) {
+        if (s1[i] != '\'') {
+            continue;
+        } else {
+            check1 = 1;
+            break;
+        }
+    }
+   
+    state[0] = check1; 
+   
+    for (int i = 0; s2[i] != '\0'; i++) {
+        if (s2[i] != '\'') {
+            continue;
+        } else {
+            check2 = 1;
+            break;
+        }
+    }
+   
+    state[1] = check2;
+    
+    return state;
+    
+}
+
+char** removeApostrophes(char *s1, char *s2, char* state[2]) {
+    char word1[strlen(s1) + 1];  // Create copies of the words to modify
+    char word2[strlen(s2) + 1];
+    // Remove apostrophes from the first word
+    int j = 0;
+    for (int i = 0; s1[i] != '\0'; i++) {
+        if (s1[i] != '\'') {
+            word1[j++] = s1[i];
+        } 
+    }
+    word1[j] = '\0';
+    
+    // Remove apostrophes from the second word
+    j = 0;
+    for (int i = 0; s2[i] != '\0'; i++) {
+        if (s2[i] != '\'') {
+            word2[j++] = s2[i];
+        } 
+    }
+    word2[j] = '\0'; 
+
+    state[0] = word1;
+    state[1] = word2;
+    
+    return state;
+}
+
 int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
     int min = 0;
     int max = dictionaryCount - 1;
 
     while (min <= max) {
+       
         int mid = (min + max) / 2;
+      // printf("Max: \"%d\"\n", max);
+      // printf("Min: \"%d\"\n", min);
+      // printf("Mid: \"%d\"\n", mid);
+        
         int cmp;
 
+        //  int state[2];
+         // char* wordsWithoutAps[2];
+       //   checkApostrophes(dictionary[mid], list.word, state);
+        //  removeApostrophes(dictionary[mid], list.word, wordsWithoutAps);
+
+       
         // Check if dictionary word is capitalized and list word is lowercase
         if (isupper(dictionary[mid][0]) && islower(list.word[0])) {
             cmp = -1; // Set cmp to a value that ensures the word is considered "after" in the comparison
         } else {
             cmp = strcasecmp(dictionary[mid], list.word);
+
+            if (strncasecmp(list.word, dictionary[mid], strlen(dictionary[mid])) == 0) {
+                cmp = 0;
+            }
+            
+            if (cmp == -39) {
+              cmp = 0;
+           }
         }
+        // printf("Dictionary word: \"%s\"\n", dictionary[mid]);
+       //printf("Current word: \"%s\"\n", list.word);
+        // printf("%d \n", cmp);
 
         // Debug output
       //  printf("Current word: \"%s\"\n", dictionary[mid]);
 
         if (cmp == 0) {
+            
             // Dictionary word matches list word (ignoring case)
             if (isupper(dictionary[mid][0])) {
-                int i = 0;
-                int check = 0;
-                int max = strlen(list.word);
-                while (list.word[i] != '\0') {
-                    if (!islower(list.word[i])) {
-                        check++;
-                    }
-                    i++;
-                }
+                    int i = 0;
+                    int check = 0;
+                    int max = strlen(list.word);
 
-                if (check == 1 || check == max) {
-                    return mid;
-                }
+                   
+                    while (list.word[i] != '\0') {
+
+                        if (list.word[i] != '\'') {
+                            if (!islower(list.word)) {
+                                check++;
+                            }
+                        }
+                        i++;
+                    }
+
+                    if (check == 1 || check == max) {
+                        return mid;
+                    }
+                    return -1;
+                
 
             } else if (islower(dictionary[mid][0]) && isupper(list.word[0])) {
-                int check = 0;
-                int i = 0;
-                int max = strlen(list.word);
+
+                    int check = 1;
+                    int i = 1;
+                    int max = strlen(list.word);
+
+                    while (list.word[i] != '\0') {
+                    if (list.word[i] != '\'') {
+                        if (isupper(list.word[i])) {
+                            check++;
+                        }
+                    }
+                        i++;
+                    }
+
+                    if (check == 1 || check == max) {
+                      
+                        return mid;
+                    }
+
+                    return -1;
                 
-                while (list.word[i] != '\0') {
-                    if (isupper(list.word[i])) {
-                        check++;
-                    }
-                    i++;
-                }
-
-                if (check == 1 || check == max) {
-                    return mid;
-                }
-                return -1;
             } else if (islower(dictionary[mid][0]) && islower(list.word[0])) {
-                int i = 0;
-                while (list.word[i] != '\0') {
-                    if (!islower(list.word[i])) {
-                        return -1;
-                    }
-                    i++;
-                }
+                   
+                    int i = 0;
+                        while (list.word[i] != '\0') {
+                        if (list.word[i] != '\'') {
+                        if (!islower(list.word[i])) {
+                            return -1;
+                            }
+                        }
+                            i++;
+                        } 
+                        
+                        return mid;
+                       
             }
-
-            return mid;
+     
         } else if (cmp > 0) {
-            // Adjust lower bound if dictionary word comes after list.word
+            
             max = mid - 1;
         } else {
-            // Adjust upper bound if dictionary word comes before list.word
+            
             min = mid + 1;
         }
     }
 
-    // Return -1 if no matches found
+   
     return -1;    
 }
 
 //splits words with hyphens into smaller chunks and writes it to an array
-void splitHyphens(char* input, char** words) {
-
-    char* token = strtok(input, "-");
+int splitHyphens(word input, word* words) {
+    char* token;
+    token = strtok(input.word, "-");
     int count = 0;  
+
     while (token != NULL) {
-        words[count] = token; 
+        word temp; // Create a new word structure for each token
+        strcpy(temp.word, token);
+        temp.line = input.line;
+        temp.number = input.number;
+
+        // Allocate memory for the word and copy the token into it
+        words[count] = temp;
+
         token = strtok(NULL, "-");
         count++;
     }
-    return;
+
+    return count;
 }
 
+
+int checkHyphen(char *word) {
+    int i = 0;
+    int check = 0;
+    while (word[i] != '\0') {
+        if (word[i] == '-') {
+            check = 1;
+        }
+        i++;
+    }
+    return check;
+}
 
 void iterateFile(char dictionary[MAX_LINES][MAX_LEN], word* list, int dictionaryCount, int lengthOfFile, char* file) {
 
     for (int i = 0; i < lengthOfFile; i++) {
+
+        if (checkHyphen(list[i].word) == 1) {
+            word noHyphen[MAX_LEN];
+            int count = splitHyphens(list[i], noHyphen);
+           for (int j = 0; j < count; j++) {
+               int state = binarySearchDict(dictionary, noHyphen[j], dictionaryCount);
+               if (state == -1 && list[i].line != 0) {
+                    report_error(file, list[i].line, list[i].number, list[i].word);
+                    }
+               }
+        } else  {
             int state = binarySearchDict(dictionary, list[i], dictionaryCount);
-        if (state == -1 && list[i].line != 0) {
-            report_error(file, list[i].line, list[i].number, list[i].word);
-        }
+            if (state == -1 && list[i].line != 0) {
+                report_error(file, list[i].line, list[i].number, list[i].word);
+            }
    
+        }
     }
 }
 
 int main(int argc, char **argv) {  
     if (argc < 2) {
-        printf("No dictionary supplied.\n");
+      //  printf("No dictionary supplied.\n");
         return EXIT_FAILURE;
     }
 
