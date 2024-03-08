@@ -18,9 +18,16 @@
 #endif
 
 
+typedef struct {
+    char lowerword[MAX_LEN];
+    char origword[MAX_LEN];
+    int cnt;
+} dictword;
+
+
 
 // Dictionary file array
-char dict[MAX_LINES][MAX_LEN];
+dictword dict[MAX_LINES];
 char txt_files[100][MAX_LEN];
 int txtcount = 0;
 
@@ -100,6 +107,13 @@ char *next_line(lines_t *L) {
     return NULL;
 }
 
+// comparison function so qsort can sort based on the lowercase words of the dictionary
+int compare_dictwords(const void *a, const void *b) {
+    dictword *wordA = (dictword*)a;
+    dictword *wordB = (dictword*)b;
+
+    return strcmp(wordA->lowerword, wordB->lowerword);
+}
 
 
 // Populates the dictionary array
@@ -109,10 +123,16 @@ int populate_dict(lines_t *L) {
     int n = 0;
 
     while ((line = next_line(L))) {
-        strcpy(dict[n], line);
+        strcpy(dict[n].origword, line);
+        for (int i = 0; line[i]; i++) {
+            line[i] = tolower(line[i]);
+        }
+        strcpy(dict[n].lowerword, line);
         n++;
         free(line);
     }
+
+    qsort(dict, n, sizeof(dictword), compare_dictwords);
 
     return n;
 }
@@ -228,179 +248,75 @@ void report_error(char *file, int line, int column_number, const char *word) {
     fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
 }
 
-int* checkApostrophes(char *s1, char *s2, int state[2]) {
-    int check1 = 0;
-    int check2 = 0;
-    
-    
-    for (int i = 0; s1[i] != '\0'; i++) {
-        if (s1[i] != '\'') {
-            continue;
-        } else {
-            check1 = 1;
-            break;
+
+int allcaps(char *word) {
+    for (int i = 0; word[i]; i++) {
+        if (islower(word[i])) {
+            return -1;
         }
     }
-   
-    state[0] = check1; 
-   
-    for (int i = 0; s2[i] != '\0'; i++) {
-        if (s2[i] != '\'') {
-            continue;
-        } else {
-            check2 = 1;
-            break;
-        }
-    }
-   
-    state[1] = check2;
-    
-    return state;
-    
+    return 1;
 }
 
-char** removeApostrophes(char *s1, char *s2, char* state[2]) {
-    char word1[strlen(s1) + 1];  // Create copies of the words to modify
-    char word2[strlen(s2) + 1];
-    // Remove apostrophes from the first word
-    int j = 0;
-    for (int i = 0; s1[i] != '\0'; i++) {
-        if (s1[i] != '\'') {
-            word1[j++] = s1[i];
-        } 
-    }
-    word1[j] = '\0';
-    
-    // Remove apostrophes from the second word
-    j = 0;
-    for (int i = 0; s2[i] != '\0'; i++) {
-        if (s2[i] != '\'') {
-            word2[j++] = s2[i];
-        } 
-    }
-    word2[j] = '\0'; 
-
-    state[0] = word1;
-    state[1] = word2;
-    
-    return state;
-}
-
-int binarySearchDict(char dictionary[MAX_LINES][MAX_LEN], word list, int dictionaryCount) {
+int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCount) {
     int min = 0;
     int max = dictionaryCount - 1;
+    char *lowercaseword = malloc(strlen(list.word)+1);
+    strcpy(lowercaseword, list.word);
 
-    while (min <= max) {
-       
-        int mid = (min + max) / 2;
-      // printf("Max: \"%d\"\n", max);
-      // printf("Min: \"%d\"\n", min);
-      // printf("Mid: \"%d\"\n", mid);
-        
-        int cmp;
-
-        //  int state[2];
-         // char* wordsWithoutAps[2];
-       //   checkApostrophes(dictionary[mid], list.word, state);
-        //  removeApostrophes(dictionary[mid], list.word, wordsWithoutAps);
-
-       
-        // Check if dictionary word is capitalized and list word is lowercase
-        if (isupper(dictionary[mid][0]) && islower(list.word[0])) {
-            cmp = -1; // Set cmp to a value that ensures the word is considered "after" in the comparison
-        } else  {
-            cmp = strcasecmp(dictionary[mid], list.word);
-            if (strncasecmp(list.word, dictionary[mid], strlen(dictionary[mid])) == 0) {
-                if (strlen(list.word) == strlen(dictionary[mid]) + 2) {
-                    cmp = 0;
-                }
-                
-            }
-            
-            if (cmp == -39) {
-              cmp = 0;
-           }
-        }
-        // printf("Dictionary word: \"%s\"\n", dictionary[mid]);
-       //printf("Current word: \"%s\"\n", list.word);
-        // printf("%d \n", cmp);
-
-        // Debug output
-      //  printf("Current word: \"%s\"\n", dictionary[mid]);
-
-        if (cmp == 0) {
-            
-            // Dictionary word matches list word (ignoring case)
-            if (isupper(dictionary[mid][0])) {
-                    int i = 0;
-                    int check = 0;
-                    int max = strlen(list.word);
-
-                   
-                    while (list.word[i] != '\0') {
-
-                        if (list.word[i] != '\'') {
-                            if (!islower(list.word)) {
-                                check++;
-                            }
-                        }
-                        i++;
-                    }
-
-                    if (check == 1 || check == max) {
-                        return mid;
-                    }
-                    return -1;
-                
-
-            } else if (islower(dictionary[mid][0]) && isupper(list.word[0])) {
-
-                    int check = 1;
-                    int i = 1;
-                    int max = strlen(list.word);
-
-                    while (list.word[i] != '\0') {
-                    if (list.word[i] != '\'') {
-                        if (isupper(list.word[i])) {
-                            check++;
-                        }
-                    }
-                        i++;
-                    }
-
-                    if (check == 1 || check == max) {
-                      
-                        return mid;
-                    }
-
-                    return -1;
-                
-            } else if (islower(dictionary[mid][0]) && islower(list.word[0])) {
-                   
-                    int i = 0;
-                        while (list.word[i] != '\0') {
-                        if (list.word[i] != '\'') {
-                        if (!islower(list.word[i])) {
-                            return -1;
-                            }
-                        }
-                            i++;
-                        } 
-                        
-                        return mid;
-                       
-            }
-     
-        } else if (cmp > 0) {
-            
-            max = mid - 1;
-        } else {
-            
-            min = mid + 1;
-        }
+    for (int i = 0; lowercaseword[i]; i++) {
+        lowercaseword[i] = tolower(lowercaseword[i]);
     }
 
-   
+    while (min <= max) {
+        int mid = min + (max-min) / 2;
+        char *midword = dictionary[mid].lowerword;
+
+        int cmp = strcmp(lowercaseword, midword);
+        
+        if (DEBUG == 2) {
+            printf("Current word: %s, dict word: %s, lowercase word: %s, lowercase dict: %s, cmp: %d\n", list.word, dictionary[mid].origword, lowercaseword, midword, cmp);
+        }
+
+        if (cmp == 0) {
+            while (mid > 0 && strcmp(lowercaseword, dictionary[mid-1].lowerword) == 0) {
+                mid--;
+            }
+
+            while (strcmp(lowercaseword, dictionary[mid].lowerword) == 0) {
+                char *original = dictionary[mid].origword;
+                int match = 1;
+                //printf("Current dictionary word: %s\n", original);
+                for (int i = 0; original[i]; i++) {
+                    //printf("current i: %d, %c, %c, %d\n", i, original[i], list.word[i], allcaps(list.word));
+                    if (!isalpha(original[i])) {
+                        continue;
+                    } else if (isupper(original[i]) && islower(list.word[i])) {
+                        match = 0;
+                        break;
+                    } else if (islower(original[i]) && isupper(list.word[i]) && i!=0 && allcaps(list.word) != 1) {
+                        match = 0;
+                        break;
+                    } 
+                }
+                if (match == 1) {
+                    free(lowercaseword);
+                    return 0;
+                }
+
+                mid++;
+            }
+            
+            free(lowercaseword);
+            return -1;
+        } else if (cmp < 0) {
+            max = mid-1;
+        } else {
+            min = mid+1;
+        }                         
+    }
+    
+    free(lowercaseword);
     return -1;    
 }
 
@@ -439,7 +355,7 @@ int checkHyphen(char *word) {
     return check;
 }
 
-void iterateFile(char dictionary[MAX_LINES][MAX_LEN], word* list, int dictionaryCount, int lengthOfFile, char* file) {
+void iterateFile(dictword dictionary[MAX_LINES], word* list, int dictionaryCount, int lengthOfFile, char* file) {
 
     for (int i = 0; i < lengthOfFile; i++) {
 
