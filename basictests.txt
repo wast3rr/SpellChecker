@@ -1,0 +1,20 @@
+These are some basic capitalization, apostrophe, and punctuation checks as outlined by the write-up
+
+let's start with capitalization: 
+
+hello hello hEllo heLlo helLo hellO hELLO hEllO Hello HELLO
+MacDonald macdonald MACDONALD MACDonald
+
+lets "move" on to apostrophes: 
+doctor's Doctor's DOCTOR'S nursE's
+
+({now} *to* {hyphens}):
+far-fetched Far-Fetched 'check------in.
+father--in-law, MOTHER-in-LAw
+
+numbers should be completely ignored from the program: 
+$35.00 a3-raven
+
+
+
+

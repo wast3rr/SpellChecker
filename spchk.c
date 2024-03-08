@@ -286,9 +286,9 @@ int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCo
             while (strcmp(lowercaseword, dictionary[mid].lowerword) == 0) {
                 char *original = dictionary[mid].origword;
                 int match = 1;
-                //printf("Current dictionary word: %s\n", original);
+               // printf("Current dictionary word: %s\n", original);
                 for (int i = 0; original[i]; i++) {
-                    //printf("current i: %d, %c, %c, %d\n", i, original[i], list.word[i], allcaps(list.word));
+                   // printf("current i: %d, %c, %c, %d\n", i, original[i], list.word[i], allcaps(list.word));
                     if (!isalpha(original[i])) {
                         continue;
                     } else if (isupper(original[i]) && islower(list.word[i])) {
