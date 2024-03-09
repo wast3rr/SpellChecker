@@ -196,7 +196,7 @@ int getwords(char *txtfile, word words[]) {
    
     while ((line = next_line(&currtxt))) {
         while (line[col-1] != '\n' && col-1 < strlen(line)) {
-            if ((col-1 < strlen(line)) && (isletter(line[col-1]))) {
+            if ((col-1 < strlen(line)) && (line[col-1] != 32)) {
                 char *currword = malloc(MAX_LEN);
                 memset(currword, 0, MAX_LEN);
                 
@@ -209,13 +209,23 @@ int getwords(char *txtfile, word words[]) {
                 
                 col++;
                 currlen++;
-                while ((col-1 < strlen(line)) && (isletter(line[col-1]) || ((col < strlen(line) && isletter(line[col]) && (line[col-1] == '-' || line[col-1] == 39))))) {
+                while ((col-1 < strlen(line)) && (line[col-1] != 32)) {
                     currword[currlen] = line[col-1];
                     
                     col++;
                     currlen++;
                 }
                 if (DEBUG) printf("%s\n", currword);
+              
+                if (!isalpha(currword[0])) {
+                    memmove(currword, currword+1, strlen(currword));
+                    words[wordcount].number++;
+                }
+
+                if (!isalpha(currword[strlen(currword) - 1])) {
+                    currword[strlen(currword) - 1] = '\0';
+                }
+
                 strcpy(words[wordcount].word, currword);
                 free(currword);
 
@@ -245,7 +255,9 @@ void clearwords (word words[], int wordslength) {
 
 //reports error message if not found in dictionary
 void report_error(char *file, int line, int column_number, const char *word) {
-    fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
+    if (strlen(word) > 0) {
+        fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
+    }
 }
 
 
@@ -366,8 +378,8 @@ void iterateFile(dictword dictionary[MAX_LINES], word* list, int dictionaryCount
                int state = binarySearchDict(dictionary, noHyphen[j], dictionaryCount);
                if (state == -1 && list[i].line != 0) {
                     report_error(file, list[i].line, list[i].number, list[i].word);
-                    }
                }
+           }
         } else  {
             int state = binarySearchDict(dictionary, list[i], dictionaryCount);
             if (state == -1 && list[i].line != 0) {
@@ -412,7 +424,7 @@ int main(int argc, char **argv) {
     }
      
     for (int i = 0; i < txtcount; i++) {
-        word words[500];
+        word words[5000];
         //returns number of words in the struct array while populating it
         int wordCount = getwords(txt_files[i], words);
         
@@ -428,7 +440,7 @@ int main(int argc, char **argv) {
         }
 
         iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, txt_files[i]);
-        clearwords(words, 500);
+        clearwords(words, 5000);
     }
 
     return EXIT_SUCCESS;
