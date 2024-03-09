@@ -12,9 +12,24 @@ doctor's Doctor's DOCTOR'S nursE's
 far-fetched Far-Fetched 'check------in.
 father--in-law, MOTHER-in-LAw
 
-numbers should be completely ignored from the program: 
+numbers should be treated as punctuation: 
 $35.00 a3-raven
 
+This is
+a
+test it's
+it's
+of the reader functions.
+Doctor's wait's vomit's.
+HeLlO wAiT WhAt fUnCtIoNs macdonald
+test-hyphen
+Hello Capitalization Test
+Misssspelled
+        Tab
+    Testst
+        macdonald
+    Hello
+Friday
 
 
 
