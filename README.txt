@@ -1,6 +1,6 @@
 CS214 P2 - Spelling Checker
 
-    - Vineet Bogam (vb422) and Karen
+    - Vineet Bogam (vb422) and Karen Pedri (klp203)
 
 Key Design Notes:
 
