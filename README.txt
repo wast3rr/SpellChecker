@@ -98,7 +98,7 @@ Test Cases:
             - extratest contains an extratest.txt file
         - this tests if directories are properly parsed and all words in the nested files are read and checked
 
-    - segCheck.txt (will add after arraylist implementation)
+    - segCheck.txt 
         - checks if the program can successfully read and check a large file without memory issues
 
 
