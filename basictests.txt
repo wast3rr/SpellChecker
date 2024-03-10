@@ -2,7 +2,10 @@ These are some basic capitalization, apostrophe, and punctuation checks as outli
 
 let's start with capitalization: 
 
-hello hello hEllo heLlo helLo hellO hELLO hEllO Hello HELLO
+this checks most cases of the word hello: 
+hello hEllo heLlo helLo hellO hELLO hEllO Hello HELLO
+hELlo heLLo helLO hElLo heLlO HELLo HeLLo HElLo hllo
+HellO HeLlO HeLlo
 MacDonald macdonald MACDONALD MACDonald
 
 lets "move" on to apostrophes: 

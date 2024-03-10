@@ -17,7 +17,7 @@
 #define DEBUG 0
 #endif
 
-
+//struct to represent a dictionary word object (more in write-up)
 typedef struct {
     char lowerword[MAX_LEN];
     char origword[MAX_LEN];
@@ -25,8 +25,9 @@ typedef struct {
 
 
 
-// Dictionary file array
+// Dictionary file array (size of 200,000)
 dictword dict[MAX_LINES];
+//Text file array (size of 100)
 char txt_files[100][MAX_LEN];
 int txtcount = 0;
 
@@ -49,7 +50,9 @@ void fdinit(lines_t *L, int fd) {
 
 
 
-// Struct for words in txt files
+// Struct for word objects in txt files
+// each word object contains its word as a character array (max length of 100 characters), 
+//line and column number in the text file
 typedef struct {
     char word[MAX_LEN];
     int line;
@@ -58,6 +61,7 @@ typedef struct {
 
 
 // Returns the next_line of a file using it's struct pointer
+//Used to iterate through each line of a text file and extract the characters in it
 char *next_line(lines_t *L) {
     // if fd isn't valid returns NULL
     if (L->fd < 0) return NULL;
@@ -100,6 +104,7 @@ char *next_line(lines_t *L) {
 
 
 // counts all the words in a file
+//Used to determine the size of our words array later in the code
 int wordCounter(char *file) {
     char *line;
 
@@ -137,21 +142,25 @@ int compare_dictwords(const void *a, const void *b) {
 
 
 // Populates the dictionary array
-// Can return n for iteration
+// Returns the number of words in the dictionary to use in binary search iteration
 int populate_dict(lines_t *L) {
     char *line;
     int n = 0;
 
+    //while there is a non-null space of characters 
     while ((line = next_line(L))) {
+        //copy the word into original word of the dictionary object
         strcpy(dict[n].origword, line);
         for (int i = 0; line[i]; i++) {
             line[i] = tolower(line[i]);
         }
+        //convert to lowercase and copy into lowercase word of the dictionary objecct
         strcpy(dict[n].lowerword, line);
         n++;
         free(line);
     }
 
+    //qsort the dictionary to ensure it is sorted in ASCII order
     qsort(dict, n, sizeof(dictword), compare_dictwords);
 
     return n;
@@ -159,14 +168,17 @@ int populate_dict(lines_t *L) {
 
 
 
-// gets the names of all txt files
+// gets the names of all txt files from the inputted directories
 void populate_txts(char *handle) {
+    //open provided directory
     DIR *d = opendir(handle);
 
     struct dirent *dir;
     
     if (d) {
+        //while there is a valid directory entry
         while ((dir = readdir(d))) {
+            //get the filename from that entry
             char *currname = dir->d_name;
             char *lastfour = &currname[strlen(currname)-4];
                 
@@ -174,14 +186,17 @@ void populate_txts(char *handle) {
             char temppath[100];
             strcpy(temppath, handle);
             strcat(temppath, "/");
+            //assign a path to the directory into temppath
             strcat(temppath, currname);
 
             int x = stat(temppath, &sbuf);
+            //close entry if there is no characters in the file
             if (x < 0) {
                 closedir(d);
                 return;
             }
 
+            //only add the file into the txt_files array if it ends in .txt
             if (strlen(currname) >= 4) {
                 if (!strcmp(lastfour, ".txt") && S_ISREG(sbuf.st_mode)) {
                     strcpy(txt_files[txtcount], temppath);
@@ -201,7 +216,7 @@ void populate_txts(char *handle) {
 
 
 // Populates the struct array with words from each file
-// Can return wordcount to use in iteration
+// Returns number of words in the text file to use in binary search iteration
 int getwords(char *txtfile, word words[]) {
     char *line;
 
@@ -213,17 +228,19 @@ int getwords(char *txtfile, word words[]) {
     lines_t currtxt;
     fdinit(&currtxt, currfd);
 
-   
+    // while there is a non-empty line in the file
     while ((line = next_line(&currtxt))) {
+        //while you remain on the same line
         while (line[col-1] != '\n' && col-1 < strlen(line)) {
+            //if haven't reached the end of the line and it is not a space character
             if ((col-1 < strlen(line)) && (line[col-1] != 32)) {
                 char *currword = malloc(MAX_LEN);
                 memset(currword, 0, MAX_LEN);
                 
                 int currlen = 0;
-
+                //assign first character of the word into currword
                 currword[currlen] = line[col-1];
-                
+                //assign line and column numbers into the word object
                 words[wordcount].line = linenum;
                 words[wordcount].number = col;
                 
@@ -245,7 +262,7 @@ int getwords(char *txtfile, word words[]) {
                 if (!isalpha(currword[strlen(currword) - 1])) {
                     currword[strlen(currword) - 1] = '\0';
                 }
-
+                // continue traversing until you find the entire word and then copy it into the word of the word object
                 strcpy(words[wordcount].word, currword);
                 free(currword);
 
@@ -275,12 +292,14 @@ void clearwords (word words[], int wordslength) {
 
 //reports error message if not found in dictionary
 void report_error(char *file, int line, int column_number, const char *word) {
+    //has to be an actual character input
     if (strlen(word) > 0) {
         fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
     }
 }
 
 
+//converts the inputted word to all caps (used to check certain capitalization cases)
 int allcaps(char *word) {
     for (int i = 0; word[i]; i++) {
         if (islower(word[i])) {
@@ -290,9 +309,12 @@ int allcaps(char *word) {
     return 1;
 }
 
+
+//binary searches the dictionary provided a inputted word object and the number of words in the dictionary
 int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCount) {
     int min = 0;
     int max = dictionaryCount - 1;
+    //converts the list word to lowercase and accounts for the null terminator
     char *lowercaseword = malloc(strlen(list.word)+1);
     strcpy(lowercaseword, list.word);
 
@@ -301,21 +323,26 @@ int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCo
     }
 
     while (min <= max) {
+        //obtains the mid value and mid dictionary word in lowercase
         int mid = min + (max-min) / 2;
         char *midword = dictionary[mid].lowerword;
 
+        // calculates the difference between the two words
         int cmp = strcmp(lowercaseword, midword);
         
         if (DEBUG == 2) {
             printf("Current word: %s, dict word: %s, lowercase word: %s, lowercase dict: %s, cmp: %d\n", list.word, dictionary[mid].origword, lowercaseword, midword, cmp);
         }
 
+        // if the dictionary and list word are equal to each other without case sensitivity
         if (cmp == 0) {
+            //shifts to the left until we reach the capital version of the dictionary word (first occurance)
             while (mid > 0 && strcmp(lowercaseword, dictionary[mid-1].lowerword) == 0) {
                 mid--;
             }
 
             while (strcmp(lowercaseword, dictionary[mid].lowerword) == 0) {
+                //Checks the list word against the original dictionary word
                 char *original = dictionary[mid].origword;
                 int match = 1;
                // printf("Current dictionary word: %s\n", original);
@@ -323,14 +350,19 @@ int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCo
                    // printf("current i: %d, %c, %c, %d\n", i, original[i], list.word[i], allcaps(list.word));
                     if (!isalpha(original[i])) {
                         continue;
+                    // if the dictionary word starts with a capital and the list word starts with a lowercase, 
+                    //   reject the word
                     } else if (isupper(original[i]) && islower(list.word[i])) {
                         match = 0;
                         break;
+                     // if the dictionary word starts with a lowercase and the list word starts with a capital,
+                     // reject the word if all the letters aren't capital nor something other than the first letter is capital
                     } else if (islower(original[i]) && isupper(list.word[i]) && i!=0 && allcaps(list.word) != 1) {
                         match = 0;
                         break;
                     } 
                 }
+                //accept word if it passes and free the lowercase word created earlier
                 if (match == 1) {
                     free(lowercaseword);
                     return 0;
@@ -374,7 +406,8 @@ int splitHyphens(word input, word* words) {
     return count;
 }
 
-
+//checks if there is a hyphen in the word
+//returns 1 if there is
 int checkHyphen(char *word) {
     int i = 0;
     int check = 0;
@@ -387,6 +420,7 @@ int checkHyphen(char *word) {
     return check;
 }
 
+//iterates through an array of word objects, binary searching each of them and checking seperately if they have a hyphen
 void iterateFile(dictword dictionary[MAX_LINES], word* list, int dictionaryCount, int lengthOfFile, char* file) {
 
     for (int i = 0; i < lengthOfFile; i++) {
