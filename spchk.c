@@ -21,7 +21,6 @@
 typedef struct {
     char lowerword[MAX_LEN];
     char origword[MAX_LEN];
-    int cnt;
 } dictword;
 
 
@@ -56,14 +55,6 @@ typedef struct {
     int line;
     int number;     // column number
 } word;
-
-
-int isletter (char c) {
-    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
-        return 1;
-    }
-    return 0;         
-}
 
 
 // Returns the next_line of a file using it's struct pointer
@@ -106,6 +97,35 @@ char *next_line(lines_t *L) {
     }
     return NULL;
 }
+
+
+// counts all the words in a file
+int wordCounter(char *file) {
+    char *line;
+
+    int count = 0;
+    int fd = open(file, O_RDONLY);
+    
+    lines_t filetxt;
+    fdinit(&filetxt, fd);
+
+    while ((line = next_line(&filetxt))) {
+        int index = 0;
+        while (line[index] != '\n' && index < strlen(line)) {
+            if (index < strlen(line) && line[index] != 32) {
+                count++;
+                index++;
+                while (index < strlen(line) && line[index] != 32) {
+                    index++;
+                }
+            }
+            index++;
+        }
+    }
+
+    return count;
+}
+
 
 // comparison function so qsort can sort based on the lowercase words of the dictionary
 int compare_dictwords(const void *a, const void *b) {
@@ -246,7 +266,7 @@ int getwords(char *txtfile, word words[]) {
 
 // clears all data from words so there's no overwriting issues
 void clearwords (word words[], int wordslength) {
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < wordslength; i++) {
         words[i].line = 0;
         words[i].number = 0;
         strcpy(words[i].word, "");
@@ -424,7 +444,8 @@ int main(int argc, char **argv) {
     }
      
     for (int i = 0; i < txtcount; i++) {
-        word words[5000];
+        int currcount = wordCounter(txt_files[i]);
+        word words[currcount];
         //returns number of words in the struct array while populating it
         int wordCount = getwords(txt_files[i], words);
         
@@ -439,8 +460,8 @@ int main(int argc, char **argv) {
             }
         }
 
-        iterateFile(dict, words, dictionaryCount + 1, wordCount + 1, txt_files[i]);
-        clearwords(words, 5000);
+        iterateFile(dict, words, dictionaryCount, wordCount, txt_files[i]);
+        clearwords(words, currcount);
     }
 
     return EXIT_SUCCESS;
