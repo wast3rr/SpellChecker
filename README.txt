@@ -56,7 +56,9 @@ Key Design Notes:
         as well as only the LAST trailing punctuation. 
         For example, in an input such as "dog.." , the word dog.. will stored in the array, getting rid of 
         the quotation marks but still leaving other trailing punctuation.
-        Also if an input is  "Doctor",  the word that is read in would be Doctor". This is still marked as incorrect. 
+        Also if an input is  "Doctor",  the word that is read in would be Doctor". Although Doctor is correct, 
+            this is still marked as incorrect because of possible errors than can occur if the provided dictionary does not follow
+            basic English syntax. 
 
         - This prevents possible incorrect words that have syntax issues from being mistakenly marked as correct. 
 
