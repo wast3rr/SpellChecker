@@ -116,7 +116,7 @@ int wordCounter(char *file) {
 
     while ((line = next_line(&filetxt))) {
         int index = 0;
-        while (line[index] != '\n' && index < strlen(line)) {
+        while (index < strlen(line) && line[index] != '\n') {
             if (index < strlen(line) && line[index] != 32) {
                 count++;
                 index++;
@@ -126,6 +126,7 @@ int wordCounter(char *file) {
             }
             index++;
         }
+        free(line);
     }
 
     return count;
@@ -231,7 +232,7 @@ int getwords(char *txtfile, word words[]) {
     // while there is a non-empty line in the file
     while ((line = next_line(&currtxt))) {
         //while you remain on the same line
-        while (line[col-1] != '\n' && col-1 < strlen(line)) {
+        while (col-1 < strlen(line) && line[col-1] != '\n') {
             //if haven't reached the end of the line and it is not a space character
             if ((col-1 < strlen(line)) && (line[col-1] != 32)) {
                 char *currword = malloc(MAX_LEN);
