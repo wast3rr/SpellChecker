@@ -254,14 +254,16 @@ int getwords(char *txtfile, word words[]) {
                 }
                 if (DEBUG) printf("%s\n", currword);
               
-                if (!isalpha(currword[0])) {
+                while (strlen(currword) > 0 && !isalpha(currword[0])) {
                     memmove(currword, currword+1, strlen(currword));
                     words[wordcount].number++;
                 }
 
-                if (!isalpha(currword[strlen(currword) - 1])) {
+                while (strlen(currword) > 0 && !isalpha(currword[strlen(currword) - 1])) {
                     currword[strlen(currword) - 1] = '\0';
                 }
+
+                //printf("New word: %s\n", currword);
                 // continue traversing until you find the entire word and then copy it into the word of the word object
                 strcpy(words[wordcount].word, currword);
                 free(currword);
