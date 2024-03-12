@@ -62,6 +62,8 @@ Key Design Notes:
 
         - This prevents possible incorrect words that have syntax issues from being mistakenly marked as correct. 
         - Numbers are also considered as punctuation. 
+        - Also, if a dictionary file has words with trailing or leading punctuation in it, the program does not get rid of the punctuation. 
+            This would cause possible errors in parsing, as examples like "...test..." and "<test>" would be falsely equal to each other. 
 
 General Design Notes: 
 
