@@ -198,7 +198,7 @@ void populate_txts(char *handle) {
             }
 
             //only add the file into the txt_files array if it ends in .txt
-            if (strlen(currname) >= 4) {
+            if (strlen(currname) >= 4 && currname[0] != '.') {
                 if (!strcmp(lastfour, ".txt") && S_ISREG(sbuf.st_mode)) {
                     strcpy(txt_files[txtcount], temppath);
                     txtcount++;

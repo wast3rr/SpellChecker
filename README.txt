@@ -117,8 +117,6 @@ Test Cases:
     - segCheck.txt 
         - checks if the program can successfully read and check a large file without memory issues
 
-    
-
-
-
+    - .doNotTest.txt
+        - placed in nestedtest/, checks to make sure that files beginning with '.' are ignored by the spell checker
 
