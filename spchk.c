@@ -23,15 +23,11 @@ typedef struct {
     char origword[MAX_LEN];
 } dictword;
 
-
-
 // Dictionary file array (size of 200,000)
 dictword dict[MAX_LINES];
 //Text file array (size of 100)
 char txt_files[100][MAX_LEN];
 int txtcount = 0;
-
-
 
 // Struct to be used for next_line function
 typedef struct {
@@ -58,6 +54,7 @@ typedef struct {
     int line;
     int number;     // column number
 } word;
+
 
 
 // Returns the next_line of a file using it's struct pointer
@@ -103,6 +100,7 @@ char *next_line(lines_t *L) {
 }
 
 
+
 // counts all the words in a file
 //Used to determine the size of our words array later in the code
 int wordCounter(char *file) {
@@ -133,6 +131,7 @@ int wordCounter(char *file) {
 }
 
 
+
 // comparison function so qsort can sort based on the lowercase words of the dictionary
 int compare_dictwords(const void *a, const void *b) {
     dictword *wordA = (dictword*)a;
@@ -140,6 +139,7 @@ int compare_dictwords(const void *a, const void *b) {
 
     return strcmp(wordA->lowerword, wordB->lowerword);
 }
+
 
 
 // Populates the dictionary array
@@ -293,6 +293,7 @@ void clearwords (word words[], int wordslength) {
     }
 }
 
+
 //reports error message if not found in dictionary
 void report_error(char *file, int line, int column_number, const char *word) {
     //has to be an actual character input
@@ -300,6 +301,7 @@ void report_error(char *file, int line, int column_number, const char *word) {
         fprintf(stderr, "%s (%d,%d): %s\n", file, line, column_number, word);
     }
 }
+
 
 
 //converts the inputted word to all caps (used to check certain capitalization cases)
@@ -311,6 +313,7 @@ int allcaps(char *word) {
     }
     return 1;
 }
+
 
 
 //binary searches the dictionary provided a inputted word object and the number of words in the dictionary
@@ -387,41 +390,61 @@ int binarySearchDict(dictword dictionary[MAX_LINES], word list, int dictionaryCo
     return -1;    
 }
 
+
+
 //splits words with hyphens into smaller chunks and writes it to an array
 int splitHyphens(word input, word* words) {
-    char* token;
-    token = strtok(input.word, "-");
-    int count = 0;  
+    int count = 0; 
+    int i = 0; 
 
-    while (token != NULL) {
-        word temp; // Create a new word structure for each token
-        strcpy(temp.word, token);
-        temp.line = input.line;
-        temp.number = input.number;
+    while (input.word[i] != '\0') {
+        int currlen = 0;
+        char *str = malloc(MAX_LEN);
+        
+        // loops while current char isn't a hyphen OR is a hyphen followed by another hyphen
+        while ((i < strlen(input.word)) && ((input.word[i] != '-') || (input.word[i] == '-' && i+1 < strlen(input.word) && input.word[i+1] == '-'))) {
+            str[currlen] = input.word[i];
+            i++;
+            currlen++;
+        }
+        
+        str[currlen] = '\0';
 
-        // Allocate memory for the word and copy the token into it
-        words[count] = temp;
+        if (strlen(str) > 0) {
+            if (DEBUG == 3) printf("%s\n", str);
+            word temp; // Create a new word structure for each token
+            strcpy(temp.word, str);
+            temp.line = input.line;
+            temp.number = input.number;
 
-        token = strtok(NULL, "-");
-        count++;
+            // Allocate memory for the word and copy the token into it
+            words[count] = temp;
+            count++;
+        }
+
+        i++;
+        free(str);
     }
 
     return count;
 }
 
+
+
 //checks if there is a hyphen in the word
 //returns 1 if there is
 int checkHyphen(char *word) {
     int i = 0;
-    int check = 0;
     while (word[i] != '\0') {
         if (word[i] == '-') {
-            check = 1;
+            return 1;
         }
         i++;
     }
-    return check;
+    return 0;
 }
+
+
 
 //iterates through an array of word objects, binary searching each of them and checking seperately if they have a hyphen
 void iterateFile(dictword dictionary[MAX_LINES], word* list, int dictionaryCount, int lengthOfFile, char* file) {
@@ -447,6 +470,8 @@ void iterateFile(dictword dictionary[MAX_LINES], word* list, int dictionaryCount
     }
 }
 
+
+
 int main(int argc, char **argv) {  
     if (argc < 2) {
       //  printf("No dictionary supplied.\n");
@@ -464,12 +489,20 @@ int main(int argc, char **argv) {
     //returns number of words in the dictionary
     int dictionaryCount = populate_dict(&dictL);
 
-    
     for (int i = 2; i < argc; i++){
         char *curr = argv[i];
+
+        // stat checks whether the current arg is a directory or a file
+        struct stat sbuf;
+        int x = stat(argv[i], &sbuf);
+
+        if (x < 0) {
+            continue;
+        }
+
         if ((strlen(curr) > 1) && (curr[0] == '.')) {
             continue;
-        } else if (strlen(curr) > 4) {
+        } else if (strlen(curr) > 4 && S_ISREG(sbuf.st_mode)) {
             char *lastfour = &curr[strlen(curr)-4];
             if (!strcmp(lastfour, ".txt")) {
                 strcpy(txt_files[txtcount], curr);

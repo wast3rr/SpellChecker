@@ -12,7 +12,7 @@ lets "move" on to apostrophes:
 doctor's Doctor's DOCTOR'S nursE's
 
 ({now} *to* {hyphens}):
-far-fetched Far-Fetched 'check------in.
+far-fetched Far-Fetched 'check------in check--again.
 father--in-law, MOTHER-in-LAw
 
 numbers should be treated as punctuation: 
